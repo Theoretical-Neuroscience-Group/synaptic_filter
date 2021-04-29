@@ -120,7 +120,7 @@ def shift_vars_back(v,k):
         v[key][0] = v[key][1]
 
 
-def run_simulation(p, online=True, verbose = False): #
+def run_simulation(p, online=True, verbose = False, precomputed_generator=None):
 
     # prepare
     out = []
@@ -135,9 +135,21 @@ def run_simulation(p, online=True, verbose = False): #
     # run
     v = init(p,t_num = t_num)
     assert 'x_wiggle' in v
+
+    # update w, Sx, g, y
+    if precomputed_generator is not None:
+        keys = ['Sx', 'y', 'w', 'g']
+        for key in keys:
+            v[key] = precomputed_generator[key]
+        errors = {}
+        print('loaded precomputed values for:',keys)
+
     for t in range(t_stop):
         k = 0 if online else t
-        errors = update_generator(v,p,k) # ground truth weights, spikes
+
+        if precomputed_generator is None:
+            errors = update_generator(v,p,k) # ground truth weights, spikes
+
         update_protocol(v,p,k)  # compute kernels
         update_filter(v,p,k)
 

@@ -78,16 +78,16 @@ def main(**kwargs):
     p['tau_z'] = 1
 
     # performance sims:
-    p['epoch_num'] = 10
+    p['epoch_num'] = 30
     p['epoch_wait'] = 2
     p['rate'] = 40 # Hz
 
     if 1: # performance sims 3.3.2021
 
-        p['tau_ou'] = 4
-        p['tau_d'] = 4
-        p['tau_x_wiggle'] = 6
-        p['beta'] = 0.3
+        p['tau_ou'] = 100
+        p['tau_d'] = 100
+        p['tau_x_wiggle'] = 200
+        p['beta'] = 0.001
         p['dim'] = 100
         p['dt'] = 0.001
         p['epoch_num'] = 30
@@ -95,15 +95,21 @@ def main(**kwargs):
         p['include-bias'] = False
         p['compute_sig2'] = False # for plotting?
         p['gamma_equal_g0'] = True
+        p['online'] = True
 
-        mp = {'betas': [p['beta']], #np.linspace(0.01,1,21),
+        mp = {'betas': [0.0001, 0.0005, 0.001, 0.005, 0.01], #np.linspace(0.01,1,21),
               'rules':  ('corr','exp','exp-rm2'),
-              'repeats': range(10),
-              'dims': [1, 5, 10, 50, 100]}
+              'repeats': range(30),
+              #'dims': [1,2,3,4,5,7,9,11,13,15,20,25,30,40,50],
+              'dims': [1,10,50],
+              'tau': [0.05, 0.025, 0.125, 0.625, 3]
+              }
         res = []
 
         parameter_list = list(enumerate(it.product(mp['dims'], mp['betas'],
-                                                mp['rules'], mp['repeats'])))
+                                                mp['rules'], mp['repeats'],
+                                                mp['tau']
+                                                )))
         length = len(parameter_list)
 
         if i != -1:
@@ -115,16 +121,17 @@ def main(**kwargs):
                                 i_max=i_max, i=i, parameter_list=parameter_list)
 
 
-        for count, (dim, beta, rule, repeat) in parameter_list:
+        for count, (dim, beta, rule, repeat, tau) in parameter_list:
             print(count,'/',length,'rule:',rule,'beta:',beta, 'dim',dim)
             p['rule'] = rule
             p['dim'] = dim
             p['beta'] = beta/(dim**(0.5))
+            p['tau'] = tau
 
-            out,v = run_simulation(p,verbose=True,online=False)
+            out,v = run_simulation(p,verbose=True,online=p['online'])
 
             out = out.mean().to_dict()
-            out.update({'beta':beta,'rule':rule, 'dim':dim})
+            out.update({'beta':beta,'rule':rule, 'dim':dim, 'tau':tau, 'tau_rho':tau*40})
             out.update({'count': count})
             res.append(out)
 

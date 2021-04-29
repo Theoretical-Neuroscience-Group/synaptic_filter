@@ -110,7 +110,7 @@ def update_filter(v,p,k):
 
     elif 'exp-rm2' == p['rule']:
 
-        eps0 = 1 # kernel prefactor
+        eps0 = 1/p['tau'] # kernel prefactor
 
         dt = p['dt']
         # \bar{\alpha}
@@ -118,13 +118,14 @@ def update_filter(v,p,k):
 
         # compute sigma
         vec_dot_x = v['x_wiggle'][k].dot(v['x'][k])
-        diag_times_x = (v['x_wiggle'][k] + v['d'][k])*v['x'][k]
+        x_wiggle_plus_d = v['x_wiggle'][k] + v['d'][k]
+        diag_times_x = x_wiggle_plus_d*v['x'][k]
         Sigma_x = p['sig2_ou']*(v['x'][k]
                     - A3*(vec_dot_x*v['x_wiggle'][k] + eps0/2*diag_times_x))
 
         if p['compute_sig2']: # only diagonal for now
             v['sig2'][k] = p['sig2_ou']*(1 - A3*(
-                        v['x_wiggle'][k]**2 + eps0/2*diag_times_x)
+                        v['x_wiggle'][k]**2 + eps0/2*x_wiggle_plus_d)
                         )
             v['sig2'][k+1] = v['sig2'][k]
 
@@ -245,7 +246,8 @@ def update_protocol(v,p,k):
 
     # update world
     dt = p['dt']
-    v['x'][k] += v['Sx'][k]  # init cond is zero for entire array
+    eps0 = 1/p['tau']
+    v['x'][k] += v['Sx'][k]*eps0  # init cond is zero for entire array
     v['x'][k + 1] = (1 - dt / p['tau']) * v['x'][k]
     v['xdot'][k] += v['Sx'][k]/dt
     v['xdot'][k+1] = - v['x'][k]*dt/p['tau']
