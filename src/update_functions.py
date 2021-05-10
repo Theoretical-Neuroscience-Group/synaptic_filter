@@ -8,9 +8,12 @@ Created on Sun 17 Jan 2021
 
 import numpy as np
 
+# performs a single filter update
 def update_filter(v,p,k):
 
     dt = p['dt']
+
+    # switch over different rules (filtering algorithms)
     if p['rule'] == 'exp':
 
         # like
