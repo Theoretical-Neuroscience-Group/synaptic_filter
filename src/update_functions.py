@@ -247,7 +247,7 @@ def update_filter(v,p,k):
     if p['rule'] == 'block':
         # block-diagonal projection filter
         # mean is a full vector as for 'corr'
-        # covariance matrix is block-diagonal matrix
+        # covariance matrix is block-diagonal
         # blocks are stored in a 3d array in which the last index is the block index
         loggamma = -p['beta']*v['alpha'][k]
 
