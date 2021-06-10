@@ -7,6 +7,7 @@ Created on Sun 17 Jan 2021
 """
 
 import numpy as np
+import math
 
 # performs a single filter update
 def update_filter(v,p,k):
@@ -271,6 +272,7 @@ def update_protocol(v,p,k):
 def update_generator(v,p,k):
     """ call before protocol """
     dt = p['dt']
+    time = k * dt
 
     # propagate weights
     dW = (dt * p['sig2_ou'] / p['tau_ou'] * 2)**0.5
@@ -278,7 +280,15 @@ def update_generator(v,p,k):
                 p['mu_ou'] - v['w'][k]) + dW * np.random.randn(p['dim'])    # np.random.randn(p['dim-gm'])
 
     # generate input spikes randomly
-    v['Sx'][k] = np.random.binomial(1,p['rate']*p['dt'],p['dim'])
+    # if block_input is True check whether k is in currently active block
+    if p['block_input']:
+        # compute scheduled block id
+        block_id = math.floor((time/p['block_period'])%p['num_blocks']) 
+        # sample only within block
+        v['Sx'][k,block_id*p['block_size']:(block_id+1)*p['block_size']] = np.random.binomial(1,p['rate']*p['dt'],p['block_size'])
+    else:
+        # sample all dimensions
+        v['Sx'][k] = np.random.binomial(1,p['rate']*p['dt'],p['dim'])
 
     # generate output spikes
     u = v['w'][k].dot(v['x'][k]) - v['alpha'][k]
