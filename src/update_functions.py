@@ -244,6 +244,49 @@ def update_filter(v,p,k):
         v['mu'][k+1] = v['mu'][k] + dmu_like + dmu_pi*dt
         v['sig2'][k+1] = v['sig2'][k] + dsig2_like + dsig2_pi*dt
 
+    if p['rule'] == 'block':
+        # block-diagonal projection filter
+        # mean is a full vector as for 'corr'
+        # covariance matrix is block-diagonal matrix
+        # blocks are stored in a 3d array in which the last index is the block index
+        loggamma = -p['beta']*v['alpha'][k]
+
+        # compute exponent of the posterior firing rate
+        for i in range(p['num_blocks']):
+            jstart = i     * p['block_size']
+            jstop  = (i+1) * p['block_size']
+            loggamma += (
+                            p['beta'] * v['mu'][k,jstart:jstop].dot(v['x'][k,jstart:jstop]) +
+                            p['beta']**2/2 * v['x'][k,jstart:jstop].dot(v['sig2'][k,:,:,i].dot(v['x'][k,jstart:jstop])) 
+                        )
+
+        v['gbar'][k] = p['g0dt'] * np.exp(loggamma)
+
+        # compute remaining stuff, update posterior parameters block by block
+        for i in range(p['num_blocks']):
+            jstart = i     * p['block_size']
+            jstop  = (i+1) * p['block_size']
+
+            # like
+            term1 = v['sig2'][k,:,:,i].dot(v['x'][k,jstart:jstop]) * p['beta']
+            dmu_like = term1 * (v['y'][k] - v['gbar'][k])
+            dsig2_like = -v['gbar'][k] * term1[np.newaxis,:]*term1[:,np.newaxis]
+
+            # prior for means and covariance
+            dmu_pi = -(v['mu'][k,jstart:jstop] - p['mu_ou']) / p['tau_ou']
+            dsig2_pi = np.diag(np.ones(p['block_size'])) # init
+
+            if p['include-bias'] == True:
+                raise RuntimeError('Bias not supported in block rule')
+            else:
+                i0 = 0
+
+            dsig2_pi[i0:, i0:] = -2 * (v['sig2'][k, i0:, i0:, i] - np.diag(np.ones((p['block_size']))*p['sig2_ou'])) / p['tau_ou']
+
+            # update
+            v['mu'][k+1,jstart:jstop] = v['mu'][k,jstart:jstop] + dmu_like + dmu_pi*dt
+            v['sig2'][k+1,:,:,i] = v['sig2'][k,:,:,i] + dsig2_like + dsig2_pi*dt
+
 
 def update_protocol(v,p,k):
     """ call before filter update """

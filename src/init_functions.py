@@ -62,6 +62,15 @@ def init(p,mu_0 = None, sig2_0=None,t_num=None):
         else:
             v['sig2'][0] = sig2_0.copy()
 
+    # block-diagonal with equal-sized blocks
+    if p['rule'] == 'block':
+        v['sig2'] = np.zeros((t_num, p['block_size'], p['block_size'], p['num_blocks']))
+        if sig2_0 is None:
+            for i in range(p['num_blocks']):
+                v['sig2'][0,:,:,i] = np.diag(np.ones(p['block_size'])*p['sig2_ou'])
+        else:
+            v['sig2'][0] = sig2_0.copy()
+
     # exp-rm and exp-z
     elif (('exp-z' == p['rule']) or ('exp-rm' == p['rule'])):
         v['sig2'] = np.zeros((t_num, dim))
