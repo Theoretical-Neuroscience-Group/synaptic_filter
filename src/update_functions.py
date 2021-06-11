@@ -323,7 +323,6 @@ def update_generator(v,p,k):
                 p['mu_ou'] - v['w'][k]) + dW * np.random.randn(p['dim'])    # np.random.randn(p['dim-gm'])
 
     # generate input spikes randomly
-    # if block_input is True check whether k is in currently active block
     if p['block_input']:
         # compute scheduled block id
         block_id = math.floor((time/p['block_period'])%p['num_blocks']) 
