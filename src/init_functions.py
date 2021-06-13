@@ -16,21 +16,23 @@ def init(p,mu_0 = None, sig2_0=None,t_num=None):
 
     # other
     v['alpha'] = np.zeros(t_num) # spike response kernel
-    v['x'] = np.zeros((t_num, dim))
-    v['Sx'] = np.zeros((t_num, dim))
-    v['w'] = np.zeros((t_num, dim))
-    v['g'] = np.ones(t_num) * p['g0'] * p['dt']
+    v['x'] = np.zeros((t_num, dim)) # presnyaptic kernel (convolution of Sx)
+    v['Sx'] = np.zeros((t_num, dim)) # binary array, input spikes
+    v['w'] = np.zeros((t_num, dim)) # hidden weight
+    v['g'] = np.ones(t_num) * p['g0'] * p['dt'] # firing rate (Hz) of generative model (computed with u)
     v['ev1'] = np.ones(t_num) * 1
-    v['u'] = np.zeros(t_num)
-    v['gbar'] = np.ones(t_num) * p['g0'] * p['dt']
-    v['gmap'] = np.ones(t_num) * p['g0'] * p['dt']  # compute without variance
-    v['y'] = np.zeros(t_num)
-    v['xdot'] = np.zeros((t_num, dim))
-    v['d'] = np.zeros((t_num, dim)) # spike vector
-    v['x_wiggle'] = np.zeros((t_num, dim)) # average input vector
+    v['u'] = np.zeros(t_num) # membrane of generative model (computed from w, x)
+    v['gbar'] = np.ones(t_num) * p['g0'] * p['dt'] # posterior firing rate
+    v['gmap'] = np.ones(t_num) * p['g0'] * p['dt']  # MAP-firing rate (only mean of filter is used)
+    v['y'] = np.zeros(t_num) # post-synaptic spiking, computed in generative model usually
+    v['xdot'] = np.zeros((t_num, dim)) # temporal derivative of presynaptic kernel, used for some filter-approximations
+    v['d'] = np.zeros((t_num, dim)) # vector used to model short-term dnyamics of covariance matrix, used in approximation "exp-rm2”
+    v['x_wiggle'] = np.zeros((t_num, dim)) # vector used to model long-term dynamics of covariance matrix, used in approximation "exp-rm2”
 
     # weights
     v['w'][0] = p['mu_ou'] + np.random.randn(p['dim']) * p['sig2_ou']**0.5
+
+    # mu, sig2 -> mean and variance of filter, sig2 is sometimes a matrix, sometimes a vector (depending on rule)
 
     # mean
     v['mu'] = np.zeros((t_num, dim))
@@ -60,6 +62,15 @@ def init(p,mu_0 = None, sig2_0=None,t_num=None):
         else:
             v['sig2'][0] = sig2_0.copy()
 
+    # block-diagonal with equal-sized blocks
+    if p['rule'] == 'block':
+        v['sig2'] = np.zeros((t_num, p['block_size'], p['block_size'], p['num_blocks']))
+        if sig2_0 is None:
+            for i in range(p['num_blocks']):
+                v['sig2'][0,:,:,i] = np.diag(np.ones(p['block_size'])*p['sig2_ou'])
+        else:
+            v['sig2'][0] = sig2_0.copy()
+
     # exp-rm and exp-z
     elif (('exp-z' == p['rule']) or ('exp-rm' == p['rule'])):
         v['sig2'] = np.zeros((t_num, dim))
@@ -80,7 +91,7 @@ def init(p,mu_0 = None, sig2_0=None,t_num=None):
     # oja
     elif 'oja' in p['rule']:
         v['sig2'] = np.zeros((t_num, dim))
-        v['ev1'][0] = 1
+        v['ev1'][0] = 1 #first eigen-value, used in the Oja’s rule approximation (but we haven’t used that lately)
         if sig2_0 is None:
             v['sig2'][0,0] = p['sig2_ou']
         else:
