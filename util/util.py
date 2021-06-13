@@ -132,9 +132,9 @@ def get_df(out_path, hetero=False):
     out = out.sort_index()
     out['sim'] = out_path[-13:-5]
     out = out.drop_duplicates()
-    
-    # remove bad sims    
-    #out = rm_sims(out,total_steps = 100*0.0001*)    
+
+    # remove bad sims
+    #out = rm_sims(out,total_steps = 100*0.0001*)
     return (out)
 
 
@@ -1272,7 +1272,7 @@ def plt_time_series(fig=None, v=None, p=None, t=None, text_size=13):
         fig (str):
             fig1d => TS of w and p(w|D)
             figS4 => STDP TS
-            figS5 => Hetero TS                
+            figS5 => Hetero TS
     """
 
     if fig is not None:
@@ -1526,7 +1526,7 @@ def plt_time_series(fig=None, v=None, p=None, t=None, text_size=13):
 
 
 def plt_manuscript_figures(fig, mp, text_size=13):
-    """ 
+    """
         load data from ./pkl_data/ and plot in ./figures/
     """
 
